@@ -1,8 +1,7 @@
 import tkinter as tk
 import os
 import json
-import win32gui
-import win32con
+
 
 # Relógio digital personalizável para Windows
 # Requer as bibliotecas: tkinter, win32gui, win32con
@@ -99,8 +98,15 @@ def set_position(pos):
     else:
         x, y = 10, 10
 
+    # Verificação para garantir que a janela não fique fora da tela
+    if x + width > screen_width:
+        x = screen_width - width - 10
+    if y + height > screen_height:
+        y = screen_height - height - 40
+
     root.geometry(f"{width}x{height}+{x}+{y}")
     save_config()
+
 
 # Função para iniciar o movimento do relógio
 def start_move(event):
@@ -111,7 +117,12 @@ def start_move(event):
 def do_move(event):
     x = event.x_root - root.x
     y = event.y_root - root.y
-    root.geometry(f"+{x}+{y}")
+
+    # Animação suave para mover a janela
+    def move_window():
+        root.geometry(f"+{x}+{y}")
+    
+    root.after(10, move_window)
 
 # Função para definir a cor do relógio
 def set_color(bg, fg):
@@ -193,6 +204,10 @@ def toggle_24h_format():
     current_24h_format = not current_24h_format
     save_config()
 
+# Função para realçar a opção do menu selecionada
+def highlight_menu_option(menu, label):
+    menu.entryconfig(label, background="lightblue")
+
 # Função para exibir o menu de contexto
 def show_context_menu(event):
     menu = tk.Menu(root, tearoff=0)
@@ -257,12 +272,8 @@ def show_context_menu(event):
 
     menu.post(event.x_root, event.y_root)
 
-# Função para reforçar a janela como "topmost"
-def enforce_topmost():
-    hwnd = root.winfo_id()
-    win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0, 0, 0, 0,
-                          win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_NOACTIVATE)
-    root.after(5000, enforce_topmost)  # reforça a cada 5 segundos
+    # Realce da opção selecionada
+    highlight_menu_option(menu, "Alternar Negrito")
 
 # Função para criar a janela do relógio
 def create_clock_window():
@@ -283,16 +294,12 @@ def create_clock_window():
     hwnd = root.winfo_id()
 
     # Traz para o topo, mesmo sobre jogos e apps fullscreen
-    win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0, 0, 0, 0,
-                      win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_SHOWWINDOW)
-
+   
     label = tk.Label(root, justify="center", bg=current_bg_color, fg=current_fg_color)
     label.pack(fill="both", expand=True)
 
     label.bind("<Button-1>", start_move)
     label.bind("<B1-Motion>", do_move)
-
-    enforce_topmost()
 
     apply_font()
     set_position(current_position)
